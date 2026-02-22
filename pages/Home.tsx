@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Star, Truck, ShieldCheck, PenTool, Eye, Sparkles, Droplets, Grid, Palette, ChevronLeft } from 'lucide-react';
-import { PRODUCTS, PROJECTS } from '../constants';
+import { Product, Project } from '../types';
 
 interface HomeProps {
   onNavigate: (page: string) => void;
   onViewProduct: (id: string) => void;
+  products: Product[];
+  projects: Project[];
 }
 
-export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct }) => {
+export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct, products, projects }) => {
   return (
     <div>
       {/* Hero Section */}
@@ -113,7 +115,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct }) => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {PROJECTS.slice(0, 8).map((project) => (
+            {projects.slice(0, 8).map((project) => (
               <div key={project.id} className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer" onClick={() => onNavigate('portfolio')}>
                 <img 
                   src={project.image} 
@@ -148,7 +150,7 @@ export const Home: React.FC<HomeProps> = ({ onNavigate, onViewProduct }) => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {PRODUCTS.slice(0, 4).map((product) => (
+            {products.slice(0, 4).map((product) => (
               <div 
                 key={product.id} 
                 className="group cursor-pointer"

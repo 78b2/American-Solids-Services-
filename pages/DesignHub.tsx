@@ -8,18 +8,21 @@ import {
   ArrowLeft, 
   Check, 
   MessageCircle, 
-  Ruler, 
-  Palette,
-  Layout,
-  Layers,
   Phone,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Layout
 } from 'lucide-react';
-import { MARBLE_TYPES, PROJECTS } from '../constants';
-import { CartItem } from '../types';
+import { PROJECTS, LEG_OPTIONS } from '../constants';
+import { CartItem, MarbleType, KitchenSample, ConsoleSample, DesignCategory, SurfaceType, ExecutionDetail } from '../types';
 
 interface DesignHubProps {
   onAddToCart: (item: CartItem) => void;
+  marbles: MarbleType[];
+  kitchenSamples?: KitchenSample[];
+  consoleSamples?: ConsoleSample[];
+  surfaceTypes?: SurfaceType[];
+  executionDetails?: ExecutionDetail[];
+  designCategories: DesignCategory[];
 }
 
 type CategoryType = 'kitchen' | 'washbasin' | 'console' | 'coffee-table' | 'coffee-corner' | 'dining-table';
@@ -31,11 +34,19 @@ interface DesignOption {
   description: string;
 }
 
-export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null);
+export const DesignHub: React.FC<DesignHubProps> = ({ 
+  onAddToCart, 
+  marbles, 
+  kitchenSamples = [], 
+  consoleSamples = [],
+  surfaceTypes = [], 
+  executionDetails: executionOptions = [], 
+  designCategories 
+}) => {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   // Form States (Shared & Specific)
-  const [selectedMarble, setSelectedMarble] = useState(MARBLE_TYPES[0].id);
+  const [selectedMarble, setSelectedMarble] = useState(marbles[0]?.id || '');
   const [dimensions, setDimensions] = useState({ length: '', width: '', height: '', depth: '' });
   const [notes, setNotes] = useState('');
   
@@ -45,15 +56,37 @@ export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
   const [hasGrooves, setHasGrooves] = useState(false);
   const [tableShape, setTableShape] = useState('rectangle');
   const [skirtThickness, setSkirtThickness] = useState('5');
+  const [selectedLegs, setSelectedLegs] = useState('wood-oak'); // Default leg
 
-  const categories: DesignOption[] = [
-    { id: 'kitchen', title: 'تصميم أسطح مطبخ عالي جودة', icon: <ChefHat size={32} />, description: 'أسطح مطابخ مودرن، مقاومة للبكتيريا والحرارة' },
-    { id: 'washbasin', title: 'تصميم مغاسل عالي جودة', icon: <Droplets size={32} />, description: 'مغاسل أحواض متصلة أو منفصلة بتصاميم فندقية' },
-    { id: 'console', title: 'تصميم كونسول مدخل', icon: <Armchair size={32} />, description: 'كونسول استقبال فخم لمداخل المنازل والشركات' },
-    { id: 'coffee-table', title: 'تصميم طاولات قهوة', icon: <Coffee size={32} />, description: 'طاولات وسط وخدمة بأشكال هندسية مميزة' },
-    { id: 'coffee-corner', title: 'تصميم كوفي كورنر', icon: <Layout size={32} />, description: 'ركن قهوة متكامل بتصميم سطح عملي وأنيق' },
-    { id: 'dining-table', title: 'تصميم طاولات طعام', icon: <Utensils size={32} />, description: 'طاولات طعام عائلية فاخرة بأي مقاس' },
-  ];
+  // Kitchen Specific States
+  const [surfaceType, setSurfaceType] = useState('');
+  const [selectedKitchenSample, setSelectedKitchenSample] = useState('');
+  const [selectedExecutionDetails, setSelectedExecutionDetails] = useState<string[]>([]);
+
+  // Console Specific States
+  const [consoleShape, setConsoleShape] = useState('wall-mounted');
+  const [selectedConsoleSample, setSelectedConsoleSample] = useState('');
+  const [consoleAddons, setConsoleAddons] = useState<string[]>([]);
+
+  // Helper to map icon string to component
+  const getIcon = (iconName: string) => {
+    switch(iconName) {
+      case 'ChefHat': return <ChefHat size={32} />;
+      case 'Droplets': return <Droplets size={32} />;
+      case 'Armchair': return <Armchair size={32} />;
+      case 'Coffee': return <Coffee size={32} />;
+      case 'Layout': return <Layout size={32} />;
+      case 'Utensils': return <Utensils size={32} />;
+      default: return <Layout size={32} />;
+    }
+  };
+
+  const categories = designCategories
+    .filter(cat => cat.isActive !== false)
+    .map(cat => ({
+      ...cat,
+      icon: getIcon(cat.icon)
+    }));
 
   const handleReset = () => {
     setSelectedCategory(null);
@@ -63,18 +96,50 @@ export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
 
   const handleSubmit = () => {
     const categoryName = categories.find(c => c.id === selectedCategory)?.title;
-    const marbleName = MARBLE_TYPES.find(m => m.id === selectedMarble)?.name;
+    const marbleName = marbles.find(m => m.id === selectedMarble)?.name;
     
-    let details = `نوع الرخام: ${marbleName}\n`;
+    let details = '';
     
     if (selectedCategory === 'kitchen') {
-      details += `الأبعاد: ${dimensions.length || '?'}x${dimensions.width || '?'} سم\n`;
+      const sampleName = kitchenSamples.find(s => s.id === selectedKitchenSample)?.name || 'غير محدد';
+      const surfaceTypeName = surfaceTypes.find(s => s.id === surfaceType)?.name || surfaceType;
+      const executionNames = selectedExecutionDetails.map(id => executionOptions.find(e => e.id === id)?.title || id).join(', ');
+
+      details += `نوع السطح: ${surfaceTypeName}\n`;
+      details += `نوع الكوريان: ${sampleName}\n`;
+      details += `تفاصيل التنفيذ: ${executionNames}\n`;
+    } else if (selectedCategory === 'console') {
+      const sampleName = consoleSamples.find(s => s.id === selectedConsoleSample)?.name || 'غير محدد';
+      const shapeName = consoleShape === 'wall-mounted' ? 'مستقيم جداري' : 
+                        consoleShape === 'floating' ? 'عائم' : 
+                        consoleShape === 'metal-legs' ? 'مع رجلين معدن' : 'مع شلال جانبي';
+      
+      details += `الشكل: ${shapeName}\n`;
+      details += `اللون: ${sampleName}\n`;
+      if (consoleAddons.length > 0) {
+          const addonNames = consoleAddons.map(a => 
+              a === 'drawer' ? 'درج' : 
+              a === 'mirror' ? 'مرآة' : 'إضاءة مخفية'
+          ).join(', ');
+          details += `إضافات: ${addonNames}\n`;
+      }
+    } else {
+       details += `نوع الرخام: ${marbleName}\n`;
+    }
+    
+    if (selectedCategory === 'kitchen') {
+      // Kitchen dimensions are optional or handled differently if needed, but keeping generic for now if used
+      if (dimensions.length) details += `الأبعاد التقريبية: ${dimensions.length}x${dimensions.width} سم\n`;
     } else if (selectedCategory === 'washbasin') {
       details += `النوع: ${washbasinType === 'integrated' ? 'حوض متصل' : 'تفصيل حوض مع سطح'}\n`;
       if (hasShelves) details += `+ رفوف جانبية/سفلية\n`;
       if (hasGrooves) details += `+ فرزات جمالية\n`;
     } else if (selectedCategory === 'coffee-table' || selectedCategory === 'dining-table') {
       details += `الشكل: ${tableShape}\nسمك الشرشف: ${skirtThickness} سم\n`;
+      const legName = LEG_OPTIONS.find(l => l.id === selectedLegs)?.name || 'افتراضي';
+      details += `الأرجل: ${legName}\n`;
+      details += `الأبعاد: ${dimensions.length}x${dimensions.width}x${dimensions.height} سم\n`;
+    } else if (selectedCategory === 'console') {
       details += `الأبعاد: ${dimensions.length}x${dimensions.width}x${dimensions.height} سم\n`;
     }
 
@@ -83,7 +148,11 @@ export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
       name: `طلب تفصيل: ${categoryName}`,
       details: details,
       price: 50, // Downpayment or estimation fee
-      image: MARBLE_TYPES.find(m => m.id === selectedMarble)?.image || '',
+      image: selectedCategory === 'kitchen' 
+        ? (kitchenSamples.find(s => s.id === selectedKitchenSample)?.image || '')
+        : selectedCategory === 'console'
+        ? (consoleSamples.find(s => s.id === selectedConsoleSample)?.image || 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853')
+        : (marbles.find(m => m.id === selectedMarble)?.image || ''),
       quantity: 1
     });
 
@@ -133,61 +202,99 @@ export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
     );
   };
 
-  const renderKitchenForm = () => (
-    <div className="space-y-6 animate-fade-in">
-      <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-amber-800 text-sm flex gap-2">
-        <MessageCircle size={20} />
-        <p>نقوم بتفصيل أسطح المطابخ بدقة عالية. يمكنك تحديد الألوان والمقاسات التقريبية، وسيقوم فريقنا بالتواصل معك لأخذ القياسات النهائية.</p>
+  const renderKitchenForm = () => {
+    const toggleExecutionDetail = (detailId: string) => {
+      if (selectedExecutionDetails.includes(detailId)) {
+        setSelectedExecutionDetails(prev => prev.filter(d => d !== detailId));
+      } else {
+        setSelectedExecutionDetails(prev => [...prev, detailId]);
+      }
+    };
+
+    return (
+    <div className="space-y-8 animate-fade-in">
+      
+      {/* Step 1: Surface Type */}
+      <div>
+        <h3 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
+          <span className="bg-stone-900 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+          اختر نوع السطح
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {surfaceTypes.length > 0 ? surfaceTypes.map(type => (
+            <button
+              key={type.id}
+              onClick={() => setSurfaceType(type.id)}
+              className={`p-4 rounded-xl border-2 text-right transition-all ${surfaceType === type.id ? 'border-amber-500 bg-amber-50' : 'border-stone-200 hover:border-stone-300'}`}
+            >
+              <span className="font-bold block">{type.name}</span>
+              {type.description && <span className="text-xs text-stone-500 block mt-1">{type.description}</span>}
+            </button>
+          )) : (
+             <p className="text-stone-500">لا توجد أنواع أسطح متاحة حالياً.</p>
+          )}
+        </div>
       </div>
 
+      {/* Step 2: Corian Type */}
       <div>
-        <label className="block text-sm font-bold text-stone-700 mb-3">حدد لون ونوع الرخام</label>
+        <h3 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
+          <span className="bg-stone-900 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+          نوع الكوريان (الألوان)
+        </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {MARBLE_TYPES.map(marble => (
+          {kitchenSamples.map(sample => (
             <div 
-              key={marble.id}
-              onClick={() => setSelectedMarble(marble.id)}
-              className={`cursor-pointer rounded-xl border-2 overflow-hidden relative ${selectedMarble === marble.id ? 'border-amber-500' : 'border-transparent'}`}
+              key={sample.id}
+              onClick={() => setSelectedKitchenSample(sample.id)}
+              className={`cursor-pointer rounded-xl border-2 overflow-hidden relative group ${selectedKitchenSample === sample.id ? 'border-amber-500' : 'border-transparent'}`}
             >
-              <img src={marble.image} alt={marble.name} className="w-full h-24 object-cover" />
-              <div className="p-2 bg-white text-xs font-bold text-center">{marble.name}</div>
-              {selectedMarble === marble.id && <div className="absolute top-2 right-2 bg-amber-500 text-white rounded-full p-1"><Check size={12} /></div>}
+              <div className="aspect-square relative">
+                <img src={sample.image} alt={sample.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                {selectedKitchenSample === sample.id && (
+                  <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
+                    <div className="bg-amber-500 text-white rounded-full p-2"><Check size={20} /></div>
+                  </div>
+                )}
+              </div>
+              <div className="p-3 bg-white text-sm font-bold text-center border-t border-stone-100">{sample.name}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-bold text-stone-700 mb-2">الطول الإجمالي (سم)</label>
-          <input 
-            type="number" 
-            value={dimensions.length}
-            onChange={(e) => setDimensions({...dimensions, length: e.target.value})}
-            className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-amber-500"
-            placeholder="مثال: 300"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-bold text-stone-700 mb-2">عمق السطح (سم)</label>
-          <input 
-            type="number" 
-            value={dimensions.width}
-            onChange={(e) => setDimensions({...dimensions, width: e.target.value})}
-            className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-amber-500"
-            placeholder="عادة 60 سم"
-          />
+      {/* Step 3: Execution Details */}
+      <div>
+        <h3 className="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
+          <span className="bg-stone-900 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+          تفاصيل التنفيذ
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {executionOptions.length > 0 ? executionOptions.map(detail => (
+            <label key={detail.id} className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedExecutionDetails.includes(detail.id) ? 'border-amber-500 bg-amber-50' : 'border-stone-200'}`}>
+              <div className={`w-6 h-6 rounded border flex items-center justify-center ${selectedExecutionDetails.includes(detail.id) ? 'bg-amber-500 border-amber-500 text-white' : 'border-stone-300 bg-white'}`}>
+                {selectedExecutionDetails.includes(detail.id) && <Check size={14} />}
+              </div>
+              <input 
+                type="checkbox" 
+                className="hidden"
+                checked={selectedExecutionDetails.includes(detail.id)}
+                onChange={() => toggleExecutionDetail(detail.id)}
+              />
+              <div>
+                  <span className="font-bold text-stone-700 block">{detail.title}</span>
+                  {detail.price && <span className="text-xs text-amber-600 font-bold">+{detail.price} د.أ</span>}
+              </div>
+            </label>
+          )) : (
+              <p className="text-stone-500">لا توجد تفاصيل تنفيذ متاحة حالياً.</p>
+          )}
         </div>
       </div>
 
-      <div className="flex justify-center">
-         <button className="text-amber-600 underline text-sm font-bold flex items-center gap-2 hover:text-amber-700">
-           <Phone size={16} />
-           ما بتعرف القياسات؟ تواصل معنا لرفع المساحات
-         </button>
-      </div>
     </div>
-  );
+    );
+  };
 
   const renderWashbasinForm = () => (
     <div className="space-y-8 animate-fade-in">
@@ -216,7 +323,7 @@ export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
       <div>
         <label className="block text-sm font-bold text-stone-700 mb-3">لون ونوع الرخام</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {MARBLE_TYPES.map(marble => (
+          {marbles.map(marble => (
             <div 
               key={marble.id}
               onClick={() => setSelectedMarble(marble.id)}
@@ -288,7 +395,7 @@ export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
       <div>
         <label className="block text-sm font-bold text-stone-700 mb-3">اختر الرخام</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {MARBLE_TYPES.map(marble => (
+          {marbles.map(marble => (
             <div 
               key={marble.id}
               onClick={() => setSelectedMarble(marble.id)}
@@ -297,6 +404,25 @@ export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
               <img src={marble.image} alt={marble.name} className="w-full h-24 object-cover" />
               <div className="p-2 bg-white text-xs font-bold text-center">{marble.name}</div>
               {selectedMarble === marble.id && <div className="absolute top-2 right-2 bg-amber-500 text-white rounded-full p-1"><Check size={12} /></div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Legs Selection (New) */}
+      <div>
+        <label className="block text-sm font-bold text-stone-700 mb-3">اختر الأرجل</label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {LEG_OPTIONS.map(leg => (
+            <div 
+              key={leg.id}
+              onClick={() => setSelectedLegs(leg.id)}
+              className={`cursor-pointer rounded-xl border-2 overflow-hidden relative p-2 ${selectedLegs === leg.id ? 'border-amber-500 bg-amber-50' : 'border-stone-200 bg-white'}`}
+            >
+              <img src={leg.image} alt={leg.name} className="w-full h-16 object-cover rounded-lg mb-2" />
+              <div className="text-xs font-bold text-center">{leg.name}</div>
+              <div className="text-[10px] text-stone-500 text-center">+{leg.price} د.أ</div>
+              {selectedLegs === leg.id && <div className="absolute top-2 right-2 bg-amber-500 text-white rounded-full p-1"><Check size={10} /></div>}
             </div>
           ))}
         </div>
@@ -341,8 +467,76 @@ export const DesignHub: React.FC<DesignHubProps> = ({ onAddToCart }) => {
 
   const renderConsoleForm = () => (
     <div className="space-y-6 animate-fade-in">
-       {/* Use Table Form logic but simplified for Console */}
-       {renderTableForm()}
+       {/* Marble Selection */}
+       <div>
+        <label className="block text-sm font-bold text-stone-700 mb-3">اختر الرخام للكونسول</label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {marbles.map(marble => (
+            <div 
+              key={marble.id}
+              onClick={() => setSelectedMarble(marble.id)}
+              className={`cursor-pointer rounded-xl border-2 overflow-hidden relative ${selectedMarble === marble.id ? 'border-amber-500' : 'border-transparent'}`}
+            >
+              <img src={marble.image} alt={marble.name} className="w-full h-24 object-cover" />
+              <div className="p-2 bg-white text-xs font-bold text-center">{marble.name}</div>
+              {selectedMarble === marble.id && <div className="absolute top-2 right-2 bg-amber-500 text-white rounded-full p-1"><Check size={12} /></div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Legs Selection */}
+      <div>
+        <label className="block text-sm font-bold text-stone-700 mb-3">اختر الأرجل</label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {LEG_OPTIONS.map(leg => (
+            <div 
+              key={leg.id}
+              onClick={() => setSelectedLegs(leg.id)}
+              className={`cursor-pointer rounded-xl border-2 overflow-hidden relative p-2 ${selectedLegs === leg.id ? 'border-amber-500 bg-amber-50' : 'border-stone-200 bg-white'}`}
+            >
+              <img src={leg.image} alt={leg.name} className="w-full h-16 object-cover rounded-lg mb-2" />
+              <div className="text-xs font-bold text-center">{leg.name}</div>
+              <div className="text-[10px] text-stone-500 text-center">+{leg.price} د.أ</div>
+              {selectedLegs === leg.id && <div className="absolute top-2 right-2 bg-amber-500 text-white rounded-full p-1"><Check size={10} /></div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+       {/* Dimensions */}
+       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-stone-50 p-4 rounded-xl border border-stone-200">
+          <div>
+            <label className="block text-xs font-bold text-stone-500 mb-1">الطول (سم)</label>
+            <input 
+                type="number" 
+                placeholder="مثال: 120"
+                className="w-full px-3 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-amber-500 outline-none" 
+                value={dimensions.length}
+                onChange={(e) => setDimensions({...dimensions, length: e.target.value})} 
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-stone-500 mb-1">العرض/العمق (سم)</label>
+            <input 
+                type="number" 
+                placeholder="مثال: 40"
+                className="w-full px-3 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-amber-500 outline-none" 
+                value={dimensions.width}
+                onChange={(e) => setDimensions({...dimensions, width: e.target.value})} 
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-stone-500 mb-1">الارتفاع (سم)</label>
+            <input 
+                type="number" 
+                placeholder="مثال: 90"
+                className="w-full px-3 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-amber-500 outline-none" 
+                value={dimensions.height}
+                onChange={(e) => setDimensions({...dimensions, height: e.target.value})} 
+            />
+          </div>
+      </div>
     </div>
   );
 

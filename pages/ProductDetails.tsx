@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { PRODUCTS } from '../constants';
 import { CartItem, Product, Review } from '../types';
 import { ArrowLeft, Star, ShoppingCart, Truck, ShieldCheck, Tag } from 'lucide-react';
 
@@ -7,10 +6,11 @@ interface ProductDetailsProps {
   productId: string;
   onAddToCart: (item: CartItem) => void;
   onBack: () => void;
+  products: Product[];
 }
 
-export const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, onAddToCart, onBack }) => {
-  const product = PRODUCTS.find(p => p.id === productId);
+export const ProductDetails: React.FC<ProductDetailsProps> = ({ productId, onAddToCart, onBack, products }) => {
+  const product = products.find(p => p.id === productId);
   
   // States
   const [selectedSize, setSelectedSize] = useState<string>(product?.sizes?.[0] || '');

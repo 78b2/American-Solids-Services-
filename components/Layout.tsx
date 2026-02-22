@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ShoppingBag, Phone, User, Home, Hammer, Grid, HelpCircle, Image, Mail } from 'lucide-react';
+import { Menu, X, ShoppingBag, Phone, User, Home, Hammer, Grid, HelpCircle, Image, Mail, Lock } from 'lucide-react';
 import { CartItem } from '../types';
 
 interface LayoutProps {
@@ -162,6 +162,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, activePage, onNavigate
                 <li><button onClick={() => onNavigate('faq')} className="hover:text-amber-500">الأسئلة الشائعة</button></li>
                 <li><a href="#" className="hover:text-amber-500">سياسة الشحن</a></li>
                 <li><button onClick={() => onNavigate('warranty')} className="hover:text-amber-500">الضمان والصيانة</button></li>
+                {/* Staff Dashboard Link */}
+                <li className="pt-2 mt-2 border-t border-stone-800">
+                   <button onClick={() => onNavigate('admin')} className="flex items-center gap-2 text-stone-600 hover:text-white transition-colors text-xs">
+                      <Lock size={12} />
+                      لوحة تحكم الموظفين
+                   </button>
+                </li>
               </ul>
             </div>
             <div>

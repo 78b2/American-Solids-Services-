@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { PROJECTS } from '../constants';
 import { Image, Filter } from 'lucide-react';
+import { Project } from '../types';
 
-export const Portfolio: React.FC = () => {
+interface PortfolioProps {
+  projects: Project[];
+}
+
+export const Portfolio: React.FC<PortfolioProps> = ({ projects }) => {
   const [filter, setFilter] = useState('all');
 
   const categories = [
@@ -14,8 +18,32 @@ export const Portfolio: React.FC = () => {
   ];
 
   const filteredProjects = filter === 'all' 
-    ? PROJECTS 
-    : PROJECTS.filter(p => p.category === filter || (filter === 'tables' && (p.category === 'coffee-table' || p.category === 'dining-table' || p.category === 'tables')));
+    ? projects 
+    : projects.filter(p => p.category === filter || (filter === 'tables' && (p.category === 'coffee-table' || p.category === 'dining-table' || p.category === 'tables')));
+
+  // Helper Component for Suspense Image
+  const SuspenseImage = ({ src, alt, className }: { src: string, alt: string, className: string }) => {
+    const [loaded, setLoaded] = useState(false);
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+        {!loaded && (
+          <div className="absolute inset-0 bg-stone-100 animate-pulse flex items-center justify-center text-stone-300">
+            <Filter size={24} />
+          </div>
+        )}
+        <img 
+          src={src} 
+          alt={alt} 
+          className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} group-hover:scale-110 transition-transform duration-700`}
+          onLoad={() => setLoaded(true)}
+          onError={(e) => {
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1596483758376-749479b6d80d'; // Fallback
+            setLoaded(true);
+          }}
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-stone-50 py-12">
@@ -55,10 +83,10 @@ export const Portfolio: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredProjects.map((project) => (
             <div key={project.id} className="group relative overflow-hidden rounded-2xl aspect-[4/3] cursor-pointer">
-              <img 
+              <SuspenseImage 
                 src={project.image} 
                 alt={project.title} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className="w-full h-full"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-stone-900/90 via-stone-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
                 <h3 className="text-white font-bold text-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-300">

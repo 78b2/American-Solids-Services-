@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
-import { PRODUCTS } from '../constants';
 import { ShoppingBag, Search, Eye } from 'lucide-react';
-import { CartItem } from '../types';
+import { CartItem, Product } from '../types';
 
 interface StoreProps {
   onAddToCart: (item: CartItem) => void;
   onViewProduct: (id: string) => void;
+  products: Product[];
 }
 
-export const Store: React.FC<StoreProps> = ({ onAddToCart, onViewProduct }) => {
+export const Store: React.FC<StoreProps> = ({ onAddToCart, onViewProduct, products }) => {
   const [filter, setFilter] = useState('all');
 
-  const categories = ['all', ...Array.from(new Set(PRODUCTS.map(p => p.category)))];
+  const categories = ['all', ...Array.from(new Set(products.map(p => p.category)))];
 
   const filteredProducts = filter === 'all' 
-    ? PRODUCTS 
-    : PRODUCTS.filter(p => p.category === filter);
+    ? products 
+    : products.filter(p => p.category === filter);
 
-  const handleAdd = (e: React.MouseEvent, product: typeof PRODUCTS[0]) => {
+  const handleAdd = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation(); // Prevent navigating to details when clicking cart icon
     
     // Calculate price with discount for cart

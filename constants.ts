@@ -2,36 +2,70 @@ import { MarbleType, LegOption, Product, Project } from './types';
 
 export const MARBLE_TYPES: MarbleType[] = [
   {
-    id: 'korean-pure-white',
-    name: 'أبيض نقي (Pure White)',
-    description: 'أسطح صلبة ناصعة البياض. غير مسامية، مقاومة للبكتيريا بنسبة 99.9%، وتعطي مظهراً عصرياً نظيفاً.',
-    priceMultiplier: 1.0,
-    origin: 'كوريا الجنوبية',
-    image: 'https://images.unsplash.com/photo-1596483758376-749479b6d80d?auto=format&fit=crop&q=80&w=500' 
+    id: 'hanex-cc-005',
+    name: 'Hanex Cascade White (CC-005)',
+    description: 'سطح أبيض نقي مع عروق ناعمة تشبه تدفق المياه. مثالي للمطابخ والحمامات العصرية.',
+    priceMultiplier: 1.2,
+    origin: 'Hanex Solid Surfaces',
+    image: 'https://images.unsplash.com/photo-1596483758376-749479b6d80d?auto=format&fit=crop&q=80&w=500',
+    isPremium: true,
+    availableFor: ['tables', 'kitchen', 'washbasin', 'console', 'coffee-corner'],
+    isActive: true
   },
   {
-    id: 'korean-grey-concrete',
-    name: 'رمادي خرساني (Concrete)',
-    description: 'مظهر الخرسانة الصناعية بملمس ناعم. يخفي الخدوش وعملي جداً للاستخدام اليومي.',
-    priceMultiplier: 1.1,
-    origin: 'كوريا الجنوبية',
-    image: 'https://images.unsplash.com/photo-1618524458563-71f654060805?auto=format&fit=crop&q=80&w=500'
-  },
-  {
-    id: 'korean-sand-beige',
-    name: 'بيج رملي (Sand Beige)',
-    description: 'درجات دافئة مع حبيبات رملية دقيقة. مثالي للديكورات الكلاسيكية والحديثة.',
-    priceMultiplier: 1.15,
-    origin: 'كوريا الجنوبية',
-    image: 'https://images.unsplash.com/photo-1600607686527-6fb886090705?auto=format&fit=crop&q=80&w=500'
-  },
-  {
-    id: 'korean-galaxy-black',
-    name: 'أسود جالاكسي (Galaxy)',
-    description: 'أسود عميق مع حبيبات براقة تشبه النجوم. فخامة عملية سهلة التنظيف.',
+    id: 'hanex-cc-006',
+    name: 'Hanex Cascade Black (CC-006)',
+    description: 'أسود فخم مع تموجات رمادية وبيضاء دقيقة. يعطي عمقاً وفخامة للمكان.',
     priceMultiplier: 1.25,
-    origin: 'كوريا الجنوبية',
-    image: 'https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&q=80&w=500'
+    origin: 'Hanex Solid Surfaces',
+    image: 'https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&q=80&w=500',
+    isPremium: true,
+    availableFor: ['tables', 'kitchen', 'washbasin', 'console', 'coffee-corner'],
+    isActive: true
+  },
+  {
+    id: 'hanex-cc-003',
+    name: 'Hanex Cascade Grey (CC-003)',
+    description: 'رمادي متوازن مع عروق طبيعية. خيار عملي وأنيق يخفي الآثار ويتحمل الاستخدام.',
+    priceMultiplier: 1.15,
+    origin: 'Hanex Solid Surfaces',
+    image: 'https://images.unsplash.com/photo-1618524458563-71f654060805?auto=format&fit=crop&q=80&w=500',
+    isPremium: false,
+    availableFor: ['tables', 'kitchen', 'washbasin', 'console', 'coffee-corner'],
+    isActive: true
+  },
+  {
+    id: 'hanex-b-012',
+    name: 'Hanex Oslo White (B-012)',
+    description: 'أبيض ثلجي ناصع بدون عروق. قمة النظافة والبساطة (Minimalist).',
+    priceMultiplier: 1.0,
+    origin: 'Hanex Solid Surfaces',
+    image: 'https://images.unsplash.com/photo-1596483758376-749479b6d80d?auto=format&fit=crop&q=80&w=500', // Reusing white for pure white
+    isPremium: false,
+    availableFor: ['tables', 'kitchen', 'washbasin', 'console', 'coffee-corner'],
+    isActive: true
+  },
+  {
+    id: 'hanex-bl-201',
+    name: 'Hanex Kashmere (BL-201)',
+    description: 'لون كريمي دافئ مع تفاصيل دقيقة تشبه الحجر الطبيعي. يضفي دفئاً على المساحات.',
+    priceMultiplier: 1.1,
+    origin: 'Hanex Solid Surfaces',
+    image: 'https://images.unsplash.com/photo-1600607686527-6fb886090705?auto=format&fit=crop&q=80&w=500',
+    isPremium: false,
+    availableFor: ['tables', 'kitchen', 'washbasin', 'console', 'coffee-corner'],
+    isActive: true
+  },
+  {
+    id: 'hanex-cs-402',
+    name: 'Hanex Sand Concrete (CS-402)',
+    description: 'مظهر الخرسانة الصناعية بلون رملي. مثالي للتصاميم الصناعية (Industrial) والعصرية.',
+    priceMultiplier: 1.1,
+    origin: 'Hanex Solid Surfaces',
+    image: 'https://images.unsplash.com/photo-1516962215378-7fa2e137ae91?auto=format&fit=crop&q=80&w=500',
+    isPremium: false,
+    availableFor: ['tables', 'kitchen', 'washbasin', 'console', 'coffee-corner'],
+    isActive: true
   }
 ];
 

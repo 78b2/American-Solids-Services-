@@ -1,133 +1,46 @@
-import React, { useState, useMemo, Suspense } from 'react';
-import { MARBLE_TYPES, LEG_OPTIONS } from '../constants';
-import { Check, Info, ArrowLeft, ArrowRight, ShoppingCart, Rotate3D, Loader2, Maximize, Ruler } from 'lucide-react';
-import { CartItem } from '../types';
+import React, { useState, useMemo, Suspense, useRef, useLayoutEffect } from 'react';
+import { CartItem, MarbleType, LegOption } from '../types';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stage, Environment, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import { Check, Info, ArrowLeft, ArrowRight, ShoppingCart, Rotate3D, Loader2, Maximize, Ruler } from 'lucide-react';
 
 interface CustomizerProps {
   onAddToCart: (item: CartItem) => void;
+  marbles: MarbleType[];
+  legs: LegOption[];
 }
 
 type Shape = 'rectangle' | 'circle' | 'square' | 'oval';
 
 // --- 3D Components ---
 
-interface Table3DProps {
-  shape: Shape;
-  dimensions: { length: number; width: number; height: number };
-  marbleImage: string;
-  legId: string;
+interface MarbleMaterialProps {
+  url: string;
+  len: number;
+  wid: number;
 }
 
-const Table3D: React.FC<Table3DProps> = ({ shape, dimensions, marbleImage, legId }) => {
-  // Use the image URL directly. Unsplash URLs work fine without extra params.
-  const textureUrl = marbleImage;
-
-  // Use useTexture from drei
-  const rawTexture = useTexture(textureUrl);
+const MarbleMaterial: React.FC<MarbleMaterialProps> = ({ url, len, wid }) => {
+  // useTexture will suspend if not loaded
+  const texture = useTexture(url);
   
-  // Convert dimensions cm -> 3D units (scale 1:10 approximately)
-  // We use a scale where 1 unit = 10cm for better visual sizing in default camera view
-  const scale = 0.1;
-  const len = dimensions.length * scale;
-  // For circle/square, width follows length
-  const wid = (shape === 'square' || shape === 'circle') ? len : dimensions.width * scale;
-  const hgt = dimensions.height * scale;
-  const thickness = 0.4; // 4cm top thickness
-  
-  const legHeight = hgt - thickness;
-  const legRadius = 0.15;
-
-  // Clone texture to handle repeats dynamically without affecting other instances
-  const texture = useMemo(() => {
-    const t = rawTexture.clone();
+  const clonedTexture = useMemo(() => {
+    const t = texture.clone();
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    // Dynamic repeat based on dimensions to keep texture density consistent
-    // Adjust divisor to tune scale (e.g., /8 means ~80cm per repeat)
     t.repeat.set(len / 8, wid / 8); 
     t.colorSpace = THREE.SRGBColorSpace;
     t.needsUpdate = true;
     return t;
-  }, [rawTexture, len, wid]);
-
-  // Leg Material Logic
-  const legMaterial = useMemo(() => {
-    if (legId.includes('gold')) {
-      return new THREE.MeshStandardMaterial({ color: "#FFD700", metalness: 1, roughness: 0.15 });
-    } else if (legId.includes('black')) {
-      return new THREE.MeshStandardMaterial({ color: "#222222", metalness: 0.5, roughness: 0.2 });
-    } else if (legId.includes('oak')) {
-      return new THREE.MeshStandardMaterial({ color: "#d4b996", roughness: 0.8 });
-    } else {
-      return new THREE.MeshStandardMaterial({ color: "#5d4037", roughness: 0.8 }); // Walnut
-    }
-  }, [legId]);
-
-  // Calculate Leg Positions
-  const legPositions = useMemo(() => {
-    const inset = 0.8; // Distance from edge
-    const y = -thickness / 2 - legHeight / 2;
-    
-    if (shape === 'circle' || shape === 'oval') {
-      // Radial positioning for round tables
-      // For circle/oval we scale the mesh, but leg positions are absolute.
-      // The table radius/dimensions are len/2 and wid/2.
-      const rX = len / 2 - 1.5;
-      const rZ = wid / 2 - 1.5;
-      return [
-        [rX * Math.cos(Math.PI/4), y, rZ * Math.sin(Math.PI/4)],
-        [rX * Math.cos(3*Math.PI/4), y, rZ * Math.sin(3*Math.PI/4)],
-        [rX * Math.cos(5*Math.PI/4), y, rZ * Math.sin(5*Math.PI/4)],
-        [rX * Math.cos(7*Math.PI/4), y, rZ * Math.sin(7*Math.PI/4)],
-      ];
-    }
-    
-    // Corner positioning for rect/square
-    const x = len / 2 - inset;
-    const z = wid / 2 - inset;
-    return [
-      [x, y, z],
-      [-x, y, z],
-      [x, y, -z],
-      [-x, y, -z]
-    ];
-  }, [shape, len, wid, legHeight]);
+  }, [texture, len, wid]);
 
   return (
-    <group>
-      {/* Table Top */}
-      <mesh 
-        castShadow 
-        receiveShadow 
-        position={[0, 0, 0]}
-        // Apply non-uniform scale ONLY for round shapes to achieve oval/circle geometry from a standard cylinder
-        // BoxGeometry handles dimensions directly via args, so scale stays 1
-        scale={(shape === 'circle' || shape === 'oval') ? [len/2, 1, wid/2] : [1, 1, 1]}
-      >
-        {shape === 'rectangle' || shape === 'square' ? (
-          <boxGeometry args={[len, thickness, wid]} />
-        ) : (
-          // Cylinder radius=1, height=thickness
-          // Scale prop above transforms this into the desired oval/circle dimensions
-          <cylinderGeometry args={[1, 1, thickness, 64]} />
-        )}
-        <meshStandardMaterial 
-          map={texture} 
-          roughness={0.1} 
-          metalness={0.1} 
-          envMapIntensity={1}
-        />
-      </mesh>
-      
-      {/* Legs */}
-      {legPositions.map((pos, idx) => (
-        <mesh key={idx} position={pos as [number, number, number]} material={legMaterial} castShadow receiveShadow>
-          <cylinderGeometry args={[legRadius, legRadius * 0.7, legHeight, 32]} />
-        </mesh>
-      ))}
-    </group>
+    <meshStandardMaterial 
+      map={clonedTexture} 
+      roughness={0.1} 
+      metalness={0.1} 
+      envMapIntensity={1}
+    />
   );
 };
 
@@ -160,6 +73,121 @@ class TextureErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 }
 
+const TextureFallbackMaterial = () => (
+  <meshStandardMaterial color="#e5e5e5" roughness={0.8} />
+);
+
+interface Table3DProps {
+  shape: Shape;
+  dimensions: { length: number; width: number; height: number };
+  marbleImage: string;
+  legId: string;
+}
+
+const Table3D: React.FC<Table3DProps> = ({ shape, dimensions, marbleImage, legId }) => {
+  // Convert dimensions cm -> 3D units (scale 1:10 approximately)
+  const scale = 0.1;
+  const len = dimensions.length * scale;
+  // For circle/square, width follows length
+  const wid = (shape === 'square' || shape === 'circle') ? len : dimensions.width * scale;
+  const hgt = dimensions.height * scale;
+  const thickness = 0.4; // 4cm top thickness
+  
+  const legHeight = hgt - thickness;
+  const legRadius = 0.15;
+
+  // Leg Material Logic
+  const legMaterial = useMemo(() => {
+    if (legId.includes('gold')) {
+      return new THREE.MeshStandardMaterial({ color: "#FFD700", metalness: 1, roughness: 0.15 });
+    } else if (legId.includes('black')) {
+      return new THREE.MeshStandardMaterial({ color: "#222222", metalness: 0.5, roughness: 0.2 });
+    } else if (legId.includes('oak')) {
+      return new THREE.MeshStandardMaterial({ color: "#d4b996", roughness: 0.8 });
+    } else {
+      return new THREE.MeshStandardMaterial({ color: "#5d4037", roughness: 0.8 }); // Walnut
+    }
+  }, [legId]);
+
+  // Calculate Leg Positions
+  const legPositions = useMemo(() => {
+    const inset = 0.8; // Distance from edge
+    const y = -thickness / 2 - legHeight / 2;
+    
+    if (shape === 'circle' || shape === 'oval') {
+      const rX = len / 2 - 1.5;
+      const rZ = wid / 2 - 1.5;
+      return [
+        [rX * Math.cos(Math.PI/4), y, rZ * Math.sin(Math.PI/4)],
+        [rX * Math.cos(3*Math.PI/4), y, rZ * Math.sin(3*Math.PI/4)],
+        [rX * Math.cos(5*Math.PI/4), y, rZ * Math.sin(5*Math.PI/4)],
+        [rX * Math.cos(7*Math.PI/4), y, rZ * Math.sin(7*Math.PI/4)],
+      ];
+    }
+    
+    const x = len / 2 - inset;
+    const z = wid / 2 - inset;
+    return [
+      [x, y, z],
+      [-x, y, z],
+      [x, y, -z],
+      [-x, y, -z]
+    ];
+  }, [shape, len, wid, legHeight]);
+
+  // Instanced Mesh Ref for optimized rendering of legs
+  const legsRef = useRef<THREE.InstancedMesh>(null);
+  const tempObject = useMemo(() => new THREE.Object3D(), []);
+
+  // Update instances when positions change
+  useLayoutEffect(() => {
+    if (!legsRef.current) return;
+    
+    legPositions.forEach((pos, i) => {
+      tempObject.position.set(pos[0], pos[1], pos[2]);
+      tempObject.updateMatrix();
+      legsRef.current!.setMatrixAt(i, tempObject.matrix);
+    });
+    legsRef.current.instanceMatrix.needsUpdate = true;
+  }, [legPositions, tempObject]);
+
+  return (
+    <group>
+      {/* Table Top */}
+      <mesh 
+        castShadow 
+        receiveShadow 
+        position={[0, 0, 0]}
+        scale={(shape === 'circle' || shape === 'oval') ? [len/2, 1, wid/2] : [1, 1, 1]}
+      >
+        {shape === 'rectangle' || shape === 'square' ? (
+          <boxGeometry args={[len, thickness, wid]} />
+        ) : (
+          <cylinderGeometry args={[1, 1, thickness, 64]} />
+        )}
+        
+        {/* Lazy Loaded Material */}
+        <TextureErrorBoundary fallback={<TextureFallbackMaterial />}>
+          <Suspense fallback={<TextureFallbackMaterial />}>
+             <MarbleMaterial url={marbleImage} len={len} wid={wid} />
+          </Suspense>
+        </TextureErrorBoundary>
+      </mesh>
+      
+      {/* Legs - Optimized with InstancedMesh */}
+      <instancedMesh 
+        ref={legsRef} 
+        args={[undefined, undefined, legPositions.length]} 
+        material={legMaterial} 
+        castShadow 
+        receiveShadow
+      >
+        <cylinderGeometry args={[legRadius, legRadius * 0.7, legHeight, 32]} />
+      </instancedMesh>
+    </group>
+  );
+};
+
 // Fallback component when texture fails
 const Table3DFallback: React.FC = () => {
   return (
@@ -174,19 +202,24 @@ const Table3DFallback: React.FC = () => {
 
 // --- Main Customizer Component ---
 
-export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart }) => {
+export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart, marbles, legs }) => {
+  // Preload textures on mount
+  React.useEffect(() => {
+    marbles.forEach(m => useTexture.preload(m.image));
+  }, [marbles]);
+
   const [step, setStep] = useState(1);
-  const [selectedMarble, setSelectedMarble] = useState(MARBLE_TYPES[0]?.id || 'korean-pure-white');
+  const [selectedMarble, setSelectedMarble] = useState(marbles[0]?.id || 'hanex-cc-005');
   const [shape, setShape] = useState<Shape>('rectangle');
   const [dimensions, setDimensions] = useState({ length: 120, width: 60, height: 45 });
-  const [selectedLegs, setSelectedLegs] = useState(LEG_OPTIONS[0].id);
+  const [selectedLegs, setSelectedLegs] = useState(legs[0]?.id || 'wood-oak');
 
   // Price Calculation Logic
   const totalPrice = useMemo(() => {
-    const marble = MARBLE_TYPES.find(m => m.id === selectedMarble);
-    const legs = LEG_OPTIONS.find(l => l.id === selectedLegs);
+    const marble = marbles.find(m => m.id === selectedMarble);
+    const leg = legs.find(l => l.id === selectedLegs);
     
-    if (!marble || !legs) return 0;
+    if (!marble || !leg) return 0;
 
     const baseFee = 300;
     // Calculate effective area based on shape
@@ -202,12 +235,12 @@ export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart }) => {
 
     const marbleCost = area * 100 * marble.priceMultiplier * 5; // Simplified pricing formula
 
-    return Math.round(baseFee + marbleCost + legs.price);
-  }, [selectedMarble, dimensions, selectedLegs, shape]);
+    return Math.round(baseFee + marbleCost + leg.price);
+  }, [selectedMarble, dimensions, selectedLegs, shape, marbles, legs]);
 
   const handleAddToCart = () => {
-    const marble = MARBLE_TYPES.find(m => m.id === selectedMarble);
-    const legs = LEG_OPTIONS.find(l => l.id === selectedLegs);
+    const marble = marbles.find(m => m.id === selectedMarble);
+    const leg = legs.find(l => l.id === selectedLegs);
     
     if (!marble) return;
 
@@ -224,7 +257,7 @@ export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart }) => {
   const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const currentMarble = MARBLE_TYPES.find(m => m.id === selectedMarble);
+  const currentMarble = marbles.find(m => m.id === selectedMarble);
 
   return (
     <div className="min-h-screen bg-stone-50 pb-20">
@@ -278,22 +311,20 @@ export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart }) => {
                 </div>
                 
                 <Canvas shadows camera={{ position: [4, 4, 6], fov: 45 }}>
-                  <TextureErrorBoundary fallback={<Table3DFallback />}>
-                    <Suspense fallback={null}>
-                      <Stage environment="city" intensity={0.5} adjustCamera={false}>
-                        {currentMarble && (
-                          <Table3D 
-                            shape={shape} 
-                            dimensions={dimensions} 
-                            marbleImage={currentMarble.image}
-                            legId={selectedLegs}
-                          />
-                        )}
-                      </Stage>
-                      <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 2} />
-                      <Environment preset="city" />
-                    </Suspense>
-                  </TextureErrorBoundary>
+                  <Suspense fallback={null}>
+                    <Stage environment="city" intensity={0.5} adjustCamera={false}>
+                      {currentMarble && (
+                        <Table3D 
+                          shape={shape} 
+                          dimensions={dimensions} 
+                          marbleImage={currentMarble.image}
+                          legId={selectedLegs}
+                        />
+                      )}
+                    </Stage>
+                    <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 2} />
+                    <Environment preset="city" />
+                  </Suspense>
                 </Canvas>
 
                 {/* Loading State Overlay */}
@@ -314,7 +345,7 @@ export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart }) => {
                     اختر نوع الرخام
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {MARBLE_TYPES.map((marble) => (
+                    {marbles.map((marble) => (
                       <div 
                         key={marble.id}
                         onClick={() => setSelectedMarble(marble.id)}
@@ -456,7 +487,7 @@ export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart }) => {
                     اختر الأرجل
                   </h2>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {LEG_OPTIONS.map((leg) => (
+                    {legs.map((leg) => (
                       <div 
                         key={leg.id}
                         onClick={() => setSelectedLegs(leg.id)}
@@ -482,7 +513,7 @@ export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart }) => {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-stone-500">نوع الرخام</span>
-                  <span className="font-medium">{MARBLE_TYPES.find(m => m.id === selectedMarble)?.name}</span>
+                  <span className="font-medium">{marbles.find(m => m.id === selectedMarble)?.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-500">الشكل</span>
@@ -496,7 +527,7 @@ export const Customizer: React.FC<CustomizerProps> = ({ onAddToCart }) => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-stone-500">الأرجل</span>
-                  <span className="font-medium">{LEG_OPTIONS.find(l => l.id === selectedLegs)?.name}</span>
+                  <span className="font-medium">{legs.find(l => l.id === selectedLegs)?.name}</span>
                 </div>
               </div>
 
